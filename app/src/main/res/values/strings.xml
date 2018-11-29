@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Frisbee</string>
+    <string name="search_place">Searching…</string>
+    <string name="need_location">Enable GPS SERVICE</string>
+    <string name="location_content">This app wants to change your device settings use GPS,Wi-Fi and cell networks for
+        your location
+    </string>
+    <string name="frisbee_needs_your_location_in_order_to_find_your_captain_according_to_current_location">Qaswa needs your location in order to find nearby drivers and your current location .</string>
+    <string name="no_car">No Car</string>
+</resources>
