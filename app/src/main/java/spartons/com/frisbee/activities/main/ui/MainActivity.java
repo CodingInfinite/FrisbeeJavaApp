@@ -24,6 +24,8 @@ import spartons.com.frisbee.activities.BaseActivity;
 import spartons.com.frisbee.activities.main.viewModel.MainActivityViewModel;
 import spartons.com.frisbee.activities.main.viewModel.MainActivityViewModelFactory;
 import spartons.com.frisbee.lsitener.LatLngInterpolator;
+import spartons.com.frisbee.repo.DriverRepo;
+import spartons.com.frisbee.repo.MarkerRepo;
 import spartons.com.frisbee.util.AppRxSchedulers;
 import spartons.com.frisbee.util.GoogleMapHelper;
 import spartons.com.frisbee.util.MarkerAnimationHelper;
@@ -44,6 +46,10 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
     GoogleMapHelper googleMapHelper;
     @Inject
     AppRxSchedulers appRxSchedulers;
+    @Inject
+    DriverRepo driverRepo;
+    @Inject
+    MarkerRepo markerRepo;
 
     private TextView currentPlaceTextView;
 
@@ -61,7 +67,10 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
         activityComponent.inject(this);
         MainActivityViewModelFactory factory = new MainActivityViewModelFactory(uiHelper,
                 LocationServices.getFusedLocationProviderClient(this),
-                appRxSchedulers
+                appRxSchedulers,
+                driverRepo,
+                markerRepo,
+                googleMapHelper
         );
         viewModel = ViewModelProviders.of(this, factory).get(MainActivityViewModel.class);
         geocoder = new Geocoder(this);
@@ -85,6 +94,13 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
                         animateCamera(location);
                     }
                     showOrAnimateMarker(location);
+                });
+        viewModel.addNewMarker
+                .observe(this, markerPair -> {
+                    if (googleMap != null && markerPair != null) {
+                        Marker marker = googleMap.addMarker(markerPair.second);
+                        viewModel.insertDriverMarker(markerPair.first, marker);
+                    }
                 });
     }
 

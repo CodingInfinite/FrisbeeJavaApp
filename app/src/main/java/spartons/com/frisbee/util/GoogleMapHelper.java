@@ -64,4 +64,17 @@ public class GoogleMapHelper {
     public MarkerOptions getUserMarker(Location location) {
         return getMarkerOptions(new LatLng(location.getLatitude(), location.getLongitude()), R.drawable.blue_dot);
     }
+
+    /**
+     * @param position where to draw the [com.google.android.gms.maps.model.Marker]
+     * @return the [MarkerOptions] with given properties added to it.
+     */
+
+    public MarkerOptions getDriverMarkerOptions(LatLng position, float angle) {
+        MarkerOptions options = getMarkerOptions(position, R.drawable.caronmap);
+        options.flat(true);
+        options.rotation(angle + 90);
+        return options;
+    }
+
 }
