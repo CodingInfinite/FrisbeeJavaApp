@@ -28,6 +28,10 @@ public class DriverRepo {
         return driverCollection.getDriverWithId(s);
     }
 
+    public Driver getNearestDriver(double lat, double lng) {
+        return driverCollection.getNearestDriver(lat, lng);
+    }
+
     public List<Driver> allItems() {
         return driverCollection.allDriver();
     }

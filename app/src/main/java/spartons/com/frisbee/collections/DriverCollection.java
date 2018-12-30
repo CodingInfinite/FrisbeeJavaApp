@@ -7,6 +7,8 @@ import spartons.com.frisbee.models.Driver;
 import spartons.com.frisbee.util.AppRxSchedulers;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collector;
@@ -85,5 +87,25 @@ public class DriverCollection {
                 }
         );
     }
-}
 
+    public Driver getNearestDriver(double lat, double lng) {
+        List<Driver> filteredDriverList = sortDriversByDistance(lat, lng);
+        if (filteredDriverList.size() == 0)
+            return null;
+        return filteredDriverList.get(0);
+    }
+
+    private List<Driver> sortDriversByDistance(final double curLat, final double curLng) {
+        List<Driver> tempDrivers = new ArrayList<>(driverList);
+        Collections.sort(tempDrivers, (driver1, driver2) -> {
+            double distance1 = measureDriverDistanceInMeters(driver1.lat, driver1.lng, curLat, curLng);
+            double distance2 = measureDriverDistanceInMeters(driver2.lat, driver2.lng, curLat, curLng);
+            return Double.compare(distance1, distance2);
+        });
+        return tempDrivers;
+    }
+
+    private double measureDriverDistanceInMeters(double driverLatitude, double driverLongitude, double currentLatitude, double currentLongitude) {
+        return 1000.0 * (6371.0 * Math.acos(Math.cos(Math.toRadians(currentLatitude)) * Math.cos(Math.toRadians(driverLatitude)) * Math.cos(Math.toRadians(driverLongitude) - Math.toRadians(currentLongitude)) + Math.sin(Math.toRadians(currentLatitude)) * Math.sin(Math.toRadians(driverLatitude))));
+    }
+}

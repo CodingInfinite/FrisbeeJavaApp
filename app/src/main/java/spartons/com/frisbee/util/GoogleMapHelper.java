@@ -9,6 +9,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.maps.GeoApiContext;
 import spartons.com.frisbee.R;
 
 import javax.inject.Inject;
@@ -24,6 +25,7 @@ public class GoogleMapHelper {
 
     private static final int ZOOM_LEVEL = 18;
     private static final int TILT_LEVEL = 25;
+    private static GeoApiContext.Builder geoApiContextBuilder = new GeoApiContext.Builder();
 
     /**
      * @param location in which position to Zoom the camera.
@@ -75,6 +77,26 @@ public class GoogleMapHelper {
         options.flat(true);
         options.rotation(angle + 90);
         return options;
+    }
+
+    /**
+     * @return the google distance api key.
+     */
+
+    private String distanceApi() {
+        return resources.getString(R.string.google_distance_matrix_api_key);
+    }
+
+    /**
+     * The function returns the ${[GeoApiContext]} with distance api key.
+     *
+     * @return the ${[GeoApiContext]} with distance api.
+     */
+
+    public GeoApiContext geoContextDistanceApi() {
+        return geoApiContextBuilder
+                .apiKey(distanceApi())
+                .build();
     }
 
 }

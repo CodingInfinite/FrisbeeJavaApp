@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="google_maps_api_key">AIzaSyDLJaKB*************tvNMRGNuxk</string>
+
     // change it with your own google maps api key
+    <string name="google_maps_api_key">AIza**********************************Nuxk</string>
+
+    // change it with your google distance matrix api key.
+    <string name="google_distance_matrix_api_key">AIza**********************************L0</string>
+
 </resources>

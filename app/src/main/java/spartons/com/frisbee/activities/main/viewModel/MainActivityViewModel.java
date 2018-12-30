@@ -17,7 +17,13 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.maps.DistanceMatrixApi;
+import com.google.maps.PendingResult;
+import com.google.maps.model.DistanceMatrix;
+import com.google.maps.model.TravelMode;
+import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import spartons.com.frisbee.lsitener.FirebaseObjectValueListener;
 import spartons.com.frisbee.lsitener.LatLngInterpolator;
@@ -38,6 +44,7 @@ public class MainActivityViewModel extends ViewModel implements FirebaseObjectVa
 
     private MediatorLiveData<String> _reverseGeocodeResult = new MediatorLiveData<>();
     private MediatorLiveData<Location> _currentLocation = new MediatorLiveData<>();
+    private MediatorLiveData<String> _calculateDistance = new MediatorLiveData<>();
     private MediatorLiveData<Pair<String, MarkerOptions>> _addNewMarker = new MediatorLiveData<>();
 
     private LocationCallback locationCallback = new LocationCallback() {
@@ -61,6 +68,7 @@ public class MainActivityViewModel extends ViewModel implements FirebaseObjectVa
     public LiveData<String> reverseGeocodeResult = _reverseGeocodeResult;
     public LiveData<Location> currentLocation = _currentLocation;
     public LiveData<Pair<String, MarkerOptions>> addNewMarker = _addNewMarker;
+    public LiveData<String> calculateDistance = _calculateDistance;
 
     public MainActivityViewModel(UiHelper uiHelper, FusedLocationProviderClient locationProviderClient, DriverRepo driverRepo, MarkerRepo markerRepo, AppRxSchedulers appRxSchedulers, GoogleMapHelper googleMapHelper) {
         this.uiHelper = uiHelper;
@@ -76,6 +84,42 @@ public class MainActivityViewModel extends ViewModel implements FirebaseObjectVa
     @SuppressLint("MissingPermission")
     public void requestLocationUpdates() {
         locationProviderClient.requestLocationUpdates(uiHelper.getLocationRequest(), locationCallback, Looper.myLooper());
+    }
+
+    public void onCameraIdle(LatLng latLng) {
+        compositeDisposable.add(Completable.fromRunnable(() -> {
+            if (!driverRepo.allItems().isEmpty()) {
+                Driver driver = driverRepo.getNearestDriver(latLng.latitude, latLng.longitude);
+                if (driver != null)
+                    calculateDistance(latLng, driver);
+            } else _calculateDistance.postValue("No \n Car");
+        }).subscribe(() -> {
+        }, Throwable::printStackTrace));
+    }
+
+    private void calculateDistance(LatLng latLng, Driver driver) {
+        compositeDisposable.add(Single.<DistanceMatrix>create(emitter -> {
+            String destination[] = {String.valueOf(driver.lat) + ",".concat(String.valueOf(driver.lng))};
+            String origins[] = {String.valueOf(latLng.latitude) + ",".concat(String.valueOf(latLng.longitude))};
+            DistanceMatrixApi.getDistanceMatrix(googleMapHelper.geoContextDistanceApi(), origins, destination)
+                    .mode(TravelMode.DRIVING)
+                    .setCallback(new PendingResult.Callback<DistanceMatrix>() {
+                        @Override
+                        public void onResult(DistanceMatrix result) {
+                            emitter.onSuccess(result);
+                        }
+
+                        @Override
+                        public void onFailure(Throwable e) {
+                            emitter.onError(e);
+                        }
+                    });
+        }).subscribeOn(appRxSchedulers.io())
+                .subscribe(result -> {
+                    if (result == null || result.rows[0] == null || result.rows[0].elements[0] == null)
+                        return;
+                    _calculateDistance.postValue(String.valueOf(result.rows[0].elements[0].duration.humanReadable));
+                }, Throwable::printStackTrace));
     }
 
     @Override

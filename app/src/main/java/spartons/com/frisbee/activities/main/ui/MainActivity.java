@@ -10,6 +10,7 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import com.google.android.gms.location.LocationServices;
@@ -35,8 +36,10 @@ import javax.inject.Inject;
 
 import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 
-public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdleListener {
+public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdleListener, GoogleMap.OnCameraMoveStartedListener {
 
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 5655;
 
@@ -52,6 +55,8 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
     MarkerRepo markerRepo;
 
     private TextView currentPlaceTextView;
+    private TextView pinTimeTextView;
+    private ProgressBar pinProgressLoader;
 
     private GoogleMap googleMap;
     private Marker currentLocationMarker;
@@ -88,7 +93,10 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
         viewModel.reverseGeocodeResult
                 .observe(this, placeName -> currentPlaceTextView.setText(placeName));
         viewModel.currentLocation
-                .observe(this, location -> {
+                .observe(this, __ -> {
+                    Location location = new Location("");
+                    location.setLatitude(37.422);
+                    location.setLongitude(-122.084);
                     if (firstTimeFlag) {
                         firstTimeFlag = false;
                         animateCamera(location);
@@ -102,10 +110,18 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
                         viewModel.insertDriverMarker(markerPair.first, marker);
                     }
                 });
+        viewModel.calculateDistance
+                .observe(this, distance -> {
+                    pinTimeTextView.setText(distance);
+                    pinTimeTextView.setVisibility(VISIBLE);
+                    pinProgressLoader.setVisibility(GONE);
+                });
     }
 
     private void initViews() {
         currentPlaceTextView = findViewById(R.id.currentPlaceTextView);
+        pinProgressLoader = findViewById(R.id.pinProgressLoader);
+        pinTimeTextView = findViewById(R.id.pinTimeTextView);
         findViewById(R.id.currentLocationImageButton).setOnClickListener(__ -> {
             Location location = viewModel.currentLocation.getValue();
             if (location == null || googleMap == null) return;
@@ -140,6 +156,7 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
         googleMapHelper.defaultMapSettings(googleMap);
         googleMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.style_json));
         googleMap.setOnCameraIdleListener(this);
+        googleMap.setOnCameraMoveStartedListener(this);
     }
 
     @Override
@@ -147,6 +164,13 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
         if (googleMap == null) return;
         LatLng latLng = googleMap.getCameraPosition().target;
         viewModel.makeReverseGeocodeRequest(latLng, geocoder);
+        viewModel.onCameraIdle(latLng);
+    }
+
+    @Override
+    public void onCameraMoveStarted(int i) {
+        pinTimeTextView.setVisibility(GONE);
+        pinProgressLoader.setVisibility(VISIBLE);
     }
 
     @Override
@@ -171,6 +195,8 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
         currentLocationMarker = null;
         appRxSchedulers = null;
         googleMap = null;
+        markerRepo = null;
+        driverRepo = null;
         geocoder = null;
     }
 }
