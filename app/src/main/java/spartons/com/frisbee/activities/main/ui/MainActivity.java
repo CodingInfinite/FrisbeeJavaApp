@@ -93,10 +93,7 @@ public class MainActivity extends BaseActivity implements GoogleMap.OnCameraIdle
         viewModel.reverseGeocodeResult
                 .observe(this, placeName -> currentPlaceTextView.setText(placeName));
         viewModel.currentLocation
-                .observe(this, __ -> {
-                    Location location = new Location("");
-                    location.setLatitude(37.422);
-                    location.setLongitude(-122.084);
+                .observe(this, location -> {
                     if (firstTimeFlag) {
                         firstTimeFlag = false;
                         animateCamera(location);
